@@ -1,0 +1,80 @@
+_schema-version: "3.2"
+ID: conanvue
+version: 0.0.1
+modules:
+- name: conanvue-destination-content
+  type: com.sap.application.content
+  requires:
+  - name: conanvue-destination-service
+    parameters:
+      content-target: true
+  - name: conanvue_html_repo_host
+    parameters:
+      service-key:
+        name: conanvue_html_repo_host-key
+  - name: uaa_conanvue
+    parameters:
+      service-key:
+        name: uaa_conanvue-key
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: conanvue_conanvue_html_repo_host
+          ServiceInstanceName: conanvue-html5-app-host-service
+          ServiceKeyName: conanvue_html_repo_host-key
+          sap.cloud.service: conanvue
+        - Authentication: OAuth2UserTokenExchange
+          Name: conanvue_uaa_conanvue
+          ServiceInstanceName: conanvue-xsuaa-service
+          ServiceKeyName: uaa_conanvue-key
+          sap.cloud.service: conanvue
+        existing_destinations_policy: ignore
+  build-parameters:
+    no-source: true
+- name: conanvue_ui_deployer
+  type: com.sap.application.content
+  path: .
+  requires:
+  - name: conanvue_html_repo_host
+    parameters:
+      content-target: true
+  build-parameters:
+    build-result: resources
+    requires:
+    - artifacts:
+      - conanvue-content.zip
+      name: conanvue
+      target-path: resources/
+- name: conanvue
+  type: html5
+  path: conanvue
+  build-parameters:
+    builder: custom
+    commands:
+    - npm install
+    - npm run build
+    supported-platforms: []
+resources:
+- name: conanvue-destination-service
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      HTML5Runtime_enabled: true
+      version: 1.0.0
+    service: destination
+    service-name: conanvue-destination-service
+    service-plan: lite
+- name: conanvue_html_repo_host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-name: conanvue-html5-app-host-service
+    service-plan: app-host
+- name: uaa_conanvue
+  type: org.cloudfoundry.managed-service
+  parameters:
+    path: ./xs-security.json
+    service: xsuaa
+    service-name: conanvue-xsuaa-service
+    service-plan: application
